@@ -3,8 +3,8 @@
  * Edite apenas aqui para alterar títulos, categorias e metadados.
  * Lote adicional: `movieCatalogHorror70.js`.
  */
-import { DEMO_VIDEO_MP4 } from '@/constants/demoVideo';
-import { MOVIE_HORROR_70 } from '@/data/movieCatalogHorror70';
+import { DEMO_VIDEO_MP4 } from '../constants/demoVideo.js';
+import { MOVIE_HORROR_70 } from './movieCatalogHorror70.js';
 
 const POSTERS = [
   '/images/banners/poster-movie.svg',

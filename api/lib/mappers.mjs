@@ -2,6 +2,16 @@
  * Converte modelos Prisma para o formato legado `Series` / `Episode` / `FeaturedBanner` do front.
  */
 
+const DEFAULT_POSTER = '/images/banners/poster-movie.svg';
+const DEFAULT_BANNER = '/images/banners/hero-slide-1.svg';
+const DEFAULT_HERO_IMAGE = '/images/banners/hero-slide-2.svg';
+
+function urlOrDefault(value, fallback) {
+  if (value == null) return fallback;
+  const s = String(value).trim();
+  return s.length > 0 ? s : fallback;
+}
+
 function categoryLabelsFromMovie(movie) {
   return movie.categories.map((mc) => mc.category.name);
 }
@@ -21,8 +31,8 @@ export function movieToSeriesRow(movie) {
     featured: movie.isFeatured,
     published: movie.isPublished,
     total_views: movie.totalViews,
-    cover_url: movie.posterImage,
-    banner_url: movie.bannerImage,
+    cover_url: urlOrDefault(movie.posterImage, DEFAULT_POSTER),
+    banner_url: urlOrDefault(movie.bannerImage, DEFAULT_BANNER),
     banner_object_position: movie.bannerObjectPosition || '50% center',
     highlighted_home_section: movie.highlightedHomeSection || '',
     categories: labels,
@@ -47,8 +57,8 @@ export function seriesToSeriesRow(series) {
     featured: series.isFeatured,
     published: series.isPublished,
     total_views: series.totalViews,
-    cover_url: series.posterImage,
-    banner_url: series.bannerImage,
+    cover_url: urlOrDefault(series.posterImage, DEFAULT_POSTER),
+    banner_url: urlOrDefault(series.bannerImage, DEFAULT_BANNER),
     banner_object_position: series.bannerObjectPosition || '50% center',
     highlighted_home_section: series.highlightedHomeSection || '',
     categories: labels,
@@ -87,7 +97,7 @@ export function heroToFeaturedBanner(hb) {
     title: hb.title,
     subtitle: hb.subtitle,
     description: hb.description,
-    image: hb.image,
+    image: urlOrDefault(hb.image, DEFAULT_HERO_IMAGE),
     custom_url: hb.customUrl,
   };
 }
