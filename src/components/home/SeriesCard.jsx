@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Play, Plus, Check, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -15,6 +15,11 @@ export default function SeriesCard({
   inMarquee = false,
 }) {
   const [hovered, setHovered] = useState(false);
+  const [coverBroken, setCoverBroken] = useState(false);
+
+  useEffect(() => {
+    setCoverBroken(false);
+  }, [series.id, series.cover_url]);
 
   const movieStreamUrl = getMovieStreamUrl(series);
   const filmePronto = isMovie(series) && !!movieStreamUrl;
@@ -48,9 +53,17 @@ export default function SeriesCard({
         <div className="aspect-[2/3] rounded-lg overflow-hidden bg-[#1A1A1A] shadow-lg relative">
           {series.cover_url ? (
             <img
-              key={`${series.id}-${series.updated_date || ''}`}
-              src={imageUrlWithCacheBust(series.cover_url, series)}
+              key={`${series.id}-${series.updated_date || ''}-${coverBroken ? 'fb' : 'ok'}`}
+              src={
+                coverBroken
+                  ? '/images/banners/poster-movie.svg'
+                  : imageUrlWithCacheBust(series.cover_url, series)
+              }
               alt={series.title}
+              loading="lazy"
+              decoding="async"
+              referrerPolicy="no-referrer"
+              onError={() => setCoverBroken(true)}
               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
             />
           ) : (

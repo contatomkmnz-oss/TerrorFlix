@@ -5,15 +5,31 @@
  */
 import { DEMO_VIDEO_MP4 } from '../constants/demoVideo.js';
 import { MOVIE_HORROR_70 } from './movieCatalogHorror70.js';
+import { posterUrlForCatalogId } from './catalogPosterUrls.js';
 
+/** Rotação só com cartazes verticais — nunca usar hero-slide aqui (são banners horizontais). */
 const POSTERS = [
   '/images/banners/poster-movie.svg',
+  '/images/banners/poster-tile-b.svg',
+  '/images/banners/poster-tile-c.svg',
+];
+
+/** Banners largos da ficha/hero (SVGs horizontais). */
+const HERO_BANNERS = [
   '/images/banners/hero-slide-1.svg',
   '/images/banners/hero-slide-2.svg',
 ];
 
 function poster(i) {
   return POSTERS[i % POSTERS.length];
+}
+
+export function coverForCatalogEntry(entry, i) {
+  return entry.poster_url || posterUrlForCatalogId(entry.id) || poster(i);
+}
+
+export function bannerForCatalogEntry(entry, i) {
+  return entry.banner_url || HERO_BANNERS[i % HERO_BANNERS.length];
 }
 
 /**
@@ -26,6 +42,8 @@ function poster(i) {
  * @property {'movie'|'series'} kind
  * @property {number} [total_views]
  * @property {string} [age_rating]
+ * @property {string} [poster_url] — capa absoluta (ex. TMDB/Bunny); senão rotação local + `catalogPosterUrls.js`
+ * @property {string} [banner_url] — hero/banner opcional
  */
 
 /** Lista completa — mesmos filmes podem aparecer em várias categorias. */
@@ -425,8 +443,8 @@ export function buildSeriesRowsFromMovieCatalog() {
       featured: true,
       published: true,
       total_views: entry.total_views ?? 5000,
-      cover_url: poster(i),
-      banner_url: poster(i + 1),
+      cover_url: coverForCatalogEntry(entry, i),
+      banner_url: bannerForCatalogEntry(entry, i),
       banner_object_position: '50% center',
       highlighted_home_section: '',
       categories: [...entry.categories],

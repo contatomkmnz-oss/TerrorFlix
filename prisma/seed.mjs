@@ -4,7 +4,11 @@
  */
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import { MOVIE_CATALOG } from '../src/data/movieCatalog.js';
+import {
+  MOVIE_CATALOG,
+  coverForCatalogEntry,
+  bannerForCatalogEntry,
+} from '../src/data/movieCatalog.js';
 import { DEMO_VIDEO_MP4 } from '../src/constants/demoVideo.js';
 
 const prisma = new PrismaClient();
@@ -94,8 +98,8 @@ async function main() {
           description: entry.description,
           year: entry.year,
           rating: entry.age_rating || '16',
-          posterImage: '/images/banners/poster-movie.svg',
-          bannerImage: '/images/banners/hero-slide-2.svg',
+          posterImage: posterImg,
+          bannerImage: bannerImg,
           isFeatured: true,
           isPublished: true,
           totalViews: entry.total_views ?? 5000,
@@ -105,6 +109,8 @@ async function main() {
         update: {
           title: entry.title,
           description: entry.description,
+          posterImage: posterImg,
+          bannerImage: bannerImg,
         },
       });
       await prisma.seriesCategory.deleteMany({ where: { seriesId: entry.id } });
