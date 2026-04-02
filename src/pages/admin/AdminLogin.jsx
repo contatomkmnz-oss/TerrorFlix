@@ -40,9 +40,26 @@ export default function AdminLogin() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim(), password }),
       });
-      const j = await r.json().catch(() => ({}));
+      const text = await r.text();
+      let j = {};
+      try {
+        j = text ? JSON.parse(text) : {};
+      } catch {
+        j = {};
+      }
       if (!r.ok) {
-        setErr(j.error || 'Falha no login');
+        const apiMsg = j.error || j.message;
+        if (apiMsg) {
+          setErr(apiMsg);
+          return;
+        }
+        if (r.status === 401) {
+          setErr('Email ou senha incorretos (ou este email não existe na base ligada à Vercel).');
+          return;
+        }
+        setErr(
+          `Erro ${r.status} no servidor. Confirma na Vercel: DATABASE_URL (mesma Neon do seed), JWT_SECRET (≥16 caracteres) e faz Redeploy.`
+        );
         return;
       }
       window.location.assign('/Admin');
