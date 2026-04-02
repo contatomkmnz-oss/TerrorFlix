@@ -4,7 +4,7 @@ import { Search, ChevronDown, ArrowLeft } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import NotificationCenter from '@/components/admin/NotificationCenter';
 import { brand } from '@/data/siteContent';
-import { LS_ACTIVE_PROFILE } from '@/config/storageKeys';
+import { readActiveProfile } from '@/lib/activeProfile';
 import ProfileAvatarImage from '@/components/profile/ProfileAvatarImage';
 
 export default function Navbar({ isStackRoute = false }) {
@@ -46,7 +46,7 @@ export default function Navbar({ isStackRoute = false }) {
     { label: 'Assinar', to: '/Subscription' },
   ];
 
-  const activeProfile = JSON.parse(localStorage.getItem(LS_ACTIVE_PROFILE) || 'null');
+  const activeProfile = readActiveProfile();
 
   // Navbar de stack (SeriesDetail, Player) — só mostra botão voltar no mobile
   if (isStackRoute) {

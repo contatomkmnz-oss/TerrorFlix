@@ -13,8 +13,6 @@ export default function SeriesCarousel({
   /** Caminho completo para «Ver Todos» (ex.: seção por highlight) */
   browseTo,
   episodes = [],
-  hideComingSoon = false,
-  hideComingSoonIds = new Set(),
   /** Avanço automático horizontal (ms). Pausa ao passar o rato na faixa. */
   autoAdvanceMs,
   pauseAutoAdvanceOnHover = true,
@@ -109,7 +107,6 @@ export default function SeriesCarousel({
               isInList={myListIds?.includes(s.id)}
               onToggleList={onToggleList}
               episodes={episodes}
-              hideComingSoon={hideComingSoon || hideComingSoonIds.has(s.id)}
             />
           ))}
         </div>

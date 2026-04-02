@@ -5,7 +5,7 @@
  */
 export function imageUrlWithCacheBust(url, entity) {
   if (!url || typeof url !== 'string') return url;
-  if (url.startsWith('data:') || url.startsWith('blob:')) return url;
+  if (url.startsWith('data:') || url.startsWith('blob:') || url.startsWith('idb://')) return url;
   const v = entity?.updated_date || entity?.created_date;
   if (!v) return url;
   const sep = url.includes('?') ? '&' : '?';

@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Play, SkipForward, List, X } from 'lucide-react';
 import { getVideoEmbedUrl } from '@/lib/videoEmbed';
 import { isMovie, getMovieStreamUrl } from '@/constants/contentType';
-import { LS_ACTIVE_PROFILE } from '@/config/storageKeys';
+import { readActiveProfile } from '@/lib/activeProfile';
 
 export default function Player() {
   const params = new URLSearchParams(window.location.search);
@@ -13,7 +13,7 @@ export default function Player() {
   const seriesIdParam = params.get('seriesId');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const activeProfile = JSON.parse(localStorage.getItem(LS_ACTIVE_PROFILE) || 'null');
+  const activeProfile = readActiveProfile();
   const progressInterval = useRef(null);
   const [showSidebar, setShowSidebar] = useState(false);
   const [autoplayCountdown, setAutoplayCountdown] = useState(null);
@@ -42,10 +42,14 @@ export default function Player() {
     seriesIdParam && !episodeId && series && isMovie(series) && getMovieStreamUrl(series)
   );
 
+  const episodeSeriesId = episode?.series_id;
   const { data: allEpisodes = [] } = useQuery({
-    queryKey: ['seriesEpisodes', episode?.series_id],
-    queryFn: () => base44.entities.Episode.filter({ series_id: episode.series_id }),
-    enabled: !!episode?.series_id && !isMoviePlayback,
+    queryKey: ['seriesEpisodes', episodeSeriesId],
+    queryFn: () =>
+      episodeSeriesId
+        ? base44.entities.Episode.filter({ series_id: episodeSeriesId })
+        : Promise.resolve([]),
+    enabled: !!episodeSeriesId && !isMoviePlayback,
   });
 
   const { data: existingHistory = [] } = useQuery({

@@ -1,4 +1,5 @@
 import { Toaster } from "@/components/ui/toaster"
+import { Toaster as SonnerToaster } from "sonner"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
@@ -27,6 +28,8 @@ import AdminSubscriptions from './pages/admin/AdminSubscriptions';
 import AdminMetrics from './pages/admin/AdminMetrics';
 import AdminBanner from './pages/admin/AdminBanner';
 import AdminPersistence from './pages/admin/AdminPersistence';
+import AdminLogin from './pages/admin/AdminLogin';
+import AdminGate from './components/admin/AdminGate';
 import Subscription from './pages/Subscription';
 import AppLayout from './components/layout/AppLayout';
 
@@ -61,28 +64,33 @@ const AuthenticatedApp = () => {
       <Route path="/" element={<Navigate to="/ProfileSelect" replace />} />
       <Route path="/ProfileSelect" element={<ProfileSelect />} />
       <Route path="/ActivateCode" element={<ActivateCode />} />
+      <Route path="/AdminLogin" element={<AdminLogin />} />
       <Route path="/Player" element={<Player />} />
-      
+
       <Route element={<AppLayout />}>
         <Route path="/Home" element={<Home />} />
         <Route path="/SeriesDetail" element={<SeriesDetail />} />
+        <Route path="/movie/:slug" element={<SeriesDetail />} />
+        <Route path="/series/:slug" element={<SeriesDetail />} />
         <Route path="/Search" element={<Search />} />
         <Route path="/MyList" element={<MyListPage />} />
         <Route path="/Browse" element={<Browse />} />
         <Route path="/Propose" element={<Propose />} />
         <Route path="/Subscription" element={<Subscription />} />
-        <Route path="/Admin" element={<AdminDashboard />} />
-        <Route path="/AdminSeries" element={<AdminSeries />} />
-        <Route path="/AdminEpisodes" element={<AdminEpisodes />} />
-        <Route path="/AdminUsers" element={<AdminUsers />} />
-        <Route path="/AdminCodes" element={<AdminCodes />} />
-        <Route path="/AdminProposals" element={<AdminProposals />} />
-        <Route path="/AdminAvatars" element={<AdminAvatars />} />
-        <Route path="/AdminEpisodeCreator" element={<AdminEpisodeCreator />} />
-        <Route path="/AdminSubscriptions" element={<AdminSubscriptions />} />
-        <Route path="/AdminMetrics" element={<AdminMetrics />} />
-        <Route path="/AdminBanner" element={<AdminBanner />} />
-        <Route path="/AdminPersistence" element={<AdminPersistence />} />
+        <Route element={<AdminGate />}>
+          <Route path="/Admin" element={<AdminDashboard />} />
+          <Route path="/AdminSeries" element={<AdminSeries />} />
+          <Route path="/AdminEpisodes" element={<AdminEpisodes />} />
+          <Route path="/AdminUsers" element={<AdminUsers />} />
+          <Route path="/AdminCodes" element={<AdminCodes />} />
+          <Route path="/AdminProposals" element={<AdminProposals />} />
+          <Route path="/AdminAvatars" element={<AdminAvatars />} />
+          <Route path="/AdminEpisodeCreator" element={<AdminEpisodeCreator />} />
+          <Route path="/AdminSubscriptions" element={<AdminSubscriptions />} />
+          <Route path="/AdminMetrics" element={<AdminMetrics />} />
+          <Route path="/AdminBanner" element={<AdminBanner />} />
+          <Route path="/AdminPersistence" element={<AdminPersistence />} />
+        </Route>
       </Route>
       
       <Route path="*" element={<PageNotFound />} />
@@ -99,6 +107,7 @@ function App() {
           <AuthenticatedApp />
         </Router>
         <Toaster />
+        <SonnerToaster richColors closeButton position="top-center" theme="dark" />
       </QueryClientProvider>
     </AuthProvider>
   )

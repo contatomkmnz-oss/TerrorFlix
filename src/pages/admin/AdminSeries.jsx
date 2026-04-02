@@ -13,6 +13,7 @@ import ImageUpload from '@/components/admin/ImageUpload';
 import { CONTENT_TYPE_MOVIE, CONTENT_TYPE_SERIES } from '@/constants/contentType';
 import { HOME_SECTION_SELECT_NONE } from '@/data/siteContent';
 import { NETFLIX_HOME_ROW_ORDER } from '@/data/netflixRowOrder';
+import { toast } from 'sonner';
 
 export default function AdminSeries() {
   const queryClient = useQueryClient();
@@ -52,6 +53,10 @@ export default function AdminSeries() {
     onSuccess: async () => {
       await invalidateSeriesQueries();
       closeDialog();
+      toast.success('Título criado.');
+    },
+    onError: (err) => {
+      toast.error(err?.message || 'Não foi possível criar. Se usou imagem grande, tente URL ou ficheiro menor.');
     },
   });
 
@@ -60,6 +65,14 @@ export default function AdminSeries() {
     onSuccess: async () => {
       await invalidateSeriesQueries();
       closeDialog();
+      toast.success('Alterações guardadas.');
+    },
+    onError: (err) => {
+      toast.error(
+        err?.message?.includes('salvar') || err?.message?.includes('quota')
+          ? 'Armazenamento cheio ou bloqueado. Reduza o tamanho das imagens ou use URLs em vez de upload.'
+          : err?.message || 'Não foi possível salvar.'
+      );
     },
   });
 

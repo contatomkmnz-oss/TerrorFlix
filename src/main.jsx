@@ -1,4 +1,5 @@
 import '@/index.css';
+import '@/globals.css';
 
 async function start() {
   const { hydrateCatalogBootstrap } = await import('@/lib/catalogHydration');

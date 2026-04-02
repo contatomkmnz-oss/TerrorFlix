@@ -60,8 +60,8 @@ export default function AdminBanner() {
           <div>
             <h1 className="text-2xl font-bold text-white">Banner Principal (Destaques)</h1>
             <p className="text-gray-400 text-sm mt-1">
-              Os títulos ativos aqui aparecem no <strong className="text-white">carrossel do topo da home</strong>.
-              Se a lista estiver vazia ou inativa, usa-se o fallback em{' '}
+              Os títulos ativos aqui aparecem no <strong className="text-white">carrossel do topo da home</strong>
+              (persistidos no servidor quando usa API real). Se não houver banners ativos, a home usa fallback local em{' '}
               <code className="text-gray-300">src/data/heroBanners.js</code>.
             </p>
           </div>

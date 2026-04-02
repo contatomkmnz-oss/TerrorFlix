@@ -2,35 +2,49 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Play, Plus, Check, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { isMovie, getMovieStreamUrl } from '@/constants/contentType';
+import { isMovie, getMovieStreamUrl, hasPlayableVideoLink } from '@/constants/contentType';
 import { imageUrlWithCacheBust } from '@/lib/imageCacheBust';
+import { seriesDetailHref } from '@/lib/seriesRoutes';
 
-export default function SeriesCard({ series, isInList, onToggleList, episodes = [], hideComingSoon = false }) {
+export default function SeriesCard({
+  series,
+  isInList,
+  onToggleList,
+  episodes = [],
+  /** Dentro do carrossel CSS (marquee): sem Framer scale no wrapper — evita conflito com transform da faixa. */
+  inMarquee = false,
+}) {
   const [hovered, setHovered] = useState(false);
 
-  const seriesEpisodes = episodes.filter(e => e.series_id === series.id);
-  const hasNoEpisodes = seriesEpisodes.length === 0;
-  const hasAtLeastOneLink = seriesEpisodes.some(e => !!e.video_url);
   const movieStreamUrl = getMovieStreamUrl(series);
   const filmePronto = isMovie(series) && !!movieStreamUrl;
-  const showComingSoon = !hideComingSoon && (
-    isMovie(series)
-      ? !filmePronto
-      : (hasNoEpisodes || !hasAtLeastOneLink)
-  );
+  const showComingSoon = !hasPlayableVideoLink(series, episodes);
+  const detailHref = seriesDetailHref(series);
   const playHref = filmePronto
     ? `/Player?seriesId=${series.id}`
-    : `/SeriesDetail?id=${series.id}`;
+    : detailHref;
+
+  const shellClass =
+    'relative shrink-0 w-[140px] md:w-[200px] lg:w-[240px] group cursor-pointer';
+
+  const Shell = inMarquee ? 'div' : motion.div;
+  const shellProps = inMarquee
+    ? {
+        className: shellClass,
+        onMouseEnter: () => setHovered(true),
+        onMouseLeave: () => setHovered(false),
+      }
+    : {
+        className: shellClass,
+        onMouseEnter: () => setHovered(true),
+        onMouseLeave: () => setHovered(false),
+        whileHover: { scale: 1.05, zIndex: 10 },
+        transition: { duration: 0.2 },
+      };
 
   return (
-    <motion.div
-      className="relative shrink-0 w-[140px] md:w-[200px] lg:w-[240px] group cursor-pointer"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      whileHover={{ scale: 1.05, zIndex: 10 }}
-      transition={{ duration: 0.2 }}
-    >
-      <Link to={`/SeriesDetail?id=${series.id}`}>
+    <Shell {...shellProps}>
+      <Link to={detailHref}>
         <div className="aspect-[2/3] rounded-lg overflow-hidden bg-[#1A1A1A] shadow-lg relative">
           {series.cover_url ? (
             <img
@@ -49,7 +63,7 @@ export default function SeriesCard({ series, isInList, onToggleList, episodes = 
               <div className="flex flex-col items-center gap-1 px-2 text-center">
                 <Clock className="w-4 h-4 text-[#FFC107]" />
                 <span className="text-[10px] md:text-xs font-bold text-[#FFC107] leading-tight">
-                  {isMovie(series) ? 'FILME EM BREVE' : 'EPISÓDIOS EM BREVE'}
+                  EM BREVE
                 </span>
               </div>
             </div>
@@ -57,12 +71,8 @@ export default function SeriesCard({ series, isInList, onToggleList, episodes = 
         </div>
       </Link>
 
-      {hovered && (
-        <motion.div
-          initial={{ opacity: 0, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="absolute -bottom-2 left-0 right-0 px-2 pb-2"
-        >
+      {hovered && (() => {
+        const hoverPanelBody = (
           <div className="bg-[#1A1A1A] rounded-b-lg p-3 shadow-2xl border-t border-[#E50914]/30">
             <p className="text-xs font-semibold text-white truncate mb-2">{series.title}</p>
             <div className="flex items-center gap-2">
@@ -88,8 +98,20 @@ export default function SeriesCard({ series, isInList, onToggleList, episodes = 
               )}
             </div>
           </div>
-        </motion.div>
-      )}
-    </motion.div>
+        );
+        const wrapClass = 'absolute -bottom-2 left-0 right-0 px-2 pb-2';
+        return inMarquee ? (
+          <div className={wrapClass}>{hoverPanelBody}</div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={wrapClass}
+          >
+            {hoverPanelBody}
+          </motion.div>
+        );
+      })()}
+    </Shell>
   );
 }

@@ -1,15 +1,17 @@
 import { isMovie, getMovieStreamUrl } from '@/constants/contentType';
 import { imageUrlWithCacheBust } from '@/lib/imageCacheBust';
+import { seriesDetailHref } from '@/lib/seriesRoutes';
 
 /**
  * Converte um item do catálogo (Series) no formato do HeroBanner.
  * Usado quando o hero é preenchido pelo Admin "Banner Principal (Destaques)".
  */
 export function seriesToHeroSlide(series, bannerRowId) {
+  const detail = seriesDetailHref(series);
   const playHref =
     isMovie(series) && getMovieStreamUrl(series)
       ? `/Player?seriesId=${series.id}`
-      : `/SeriesDetail?id=${series.id}`;
+      : detail;
   const rawBanner = series.banner_url || series.cover_url || '';
   return {
     id: String(bannerRowId ?? series.id),
@@ -24,6 +26,6 @@ export function seriesToHeroSlide(series, bannerRowId) {
     category: series.category ?? '',
     playExternal: false,
     playHref,
-    detailHref: `/SeriesDetail?id=${series.id}`,
+    detailHref: detail,
   };
 }

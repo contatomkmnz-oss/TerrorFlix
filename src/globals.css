@@ -54,3 +54,46 @@ html {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Faixas de filmes: loop contínuo (conteúdo duplicado no JSX). Direção oposta com .movie-marquee-track--reverse */
+@keyframes movie-marquee-shift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.movie-marquee-wrap {
+  overflow: hidden;
+  overflow-x: clip;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  touch-action: pan-y;
+}
+
+.movie-marquee-track {
+  display: flex;
+  width: max-content;
+  animation-name: movie-marquee-shift;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.movie-marquee-track.movie-marquee-track--reverse {
+  animation-direction: reverse;
+}
+
+.movie-marquee-wrap:hover .movie-marquee-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .movie-marquee-track {
+    animation-duration: 180s !important;
+  }
+}

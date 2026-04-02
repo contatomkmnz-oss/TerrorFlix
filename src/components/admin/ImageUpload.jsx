@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Upload, X, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function ImageUpload({ value, onChange, placeholder = "Clique para enviar uma imagem", aspectRatio = "cover" }) {
   const [uploading, setUploading] = useState(false);
@@ -10,9 +11,15 @@ export default function ImageUpload({ value, onChange, placeholder = "Clique par
     const file = e.target.files[0];
     if (!file) return;
     setUploading(true);
-    const response = await base44.integrations.Core.UploadFile({ file });
-    onChange(response.file_url);
-    setUploading(false);
+    try {
+      const response = await base44.integrations.Core.UploadFile({ file });
+      onChange(response.file_url);
+    } catch (err) {
+      toast.error(err?.message || 'Falha ao processar a imagem. Tente outro ficheiro ou cole uma URL.');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
   };
 
   const heightClass = aspectRatio === 'square' ? 'aspect-square' : 'h-36';

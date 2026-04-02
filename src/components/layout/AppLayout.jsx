@@ -6,20 +6,20 @@ import PullToRefresh from './PullToRefresh';
 import SubscriptionBanner from '@/components/subscription/SubscriptionBanner';
 import SubscriptionWall from '@/components/subscription/SubscriptionWall';
 import { base44 } from '@/api/base44Client';
-import { LS_ACTIVE_PROFILE } from '@/config/storageKeys';
+import { readActiveProfile } from '@/lib/activeProfile';
 import { useQueryClient } from '@tanstack/react-query';
 
 // Abas que preservam scroll ao voltar
 const TAB_ROUTES = ['/Home', '/Browse', '/Search', '/MyList', '/Subscription'];
 
 // Rotas "stack" — sem BottomNav, com back button no header
-const STACK_ROUTES = ['/SeriesDetail', '/Player'];
+const STACK_ROUTES = ['/SeriesDetail', '/Player', '/movie', '/series'];
 
 // Rotas que NÃO precisam de assinatura ativa
 const FREE_ROUTES = ['/Subscription', '/ActivateCode', '/ProfileSelect', '/Admin', '/AdminSeries', '/AdminEpisodes', '/AdminUsers', '/AdminCodes', '/AdminProposals', '/AdminAvatars', '/AdminEpisodeCreator', '/AdminSubscriptions', '/AdminMetrics', '/AdminBanner', '/AdminPersistence'];
 
 // Rotas que NÃO precisam de perfil ativo (admin e perfil select em si)
-const NO_PROFILE_ROUTES = ['/ProfileSelect', '/Admin', '/AdminSeries', '/AdminEpisodes', '/AdminUsers', '/AdminCodes', '/AdminProposals', '/AdminAvatars', '/AdminEpisodeCreator', '/AdminSubscriptions', '/AdminMetrics', '/AdminBanner', '/AdminPersistence', '/Subscription', '/ActivateCode'];
+const NO_PROFILE_ROUTES = ['/ProfileSelect', '/AdminLogin', '/Admin', '/AdminSeries', '/AdminEpisodes', '/AdminUsers', '/AdminCodes', '/AdminProposals', '/AdminAvatars', '/AdminEpisodeCreator', '/AdminSubscriptions', '/AdminMetrics', '/AdminBanner', '/AdminPersistence', '/Subscription', '/ActivateCode'];
 
 export default function AppLayout() {
   const [subState, setSubState] = useState(null); // null = loading
@@ -73,7 +73,7 @@ export default function AppLayout() {
     // Verifica se há perfil ativo (apenas em rotas que precisam de perfil)
     const needsProfile = !NO_PROFILE_ROUTES.some(r => location.pathname.startsWith(r));
     if (needsProfile) {
-      const activeProfile = localStorage.getItem(LS_ACTIVE_PROFILE);
+      const activeProfile = readActiveProfile();
       if (!activeProfile) {
         navigate('/ProfileSelect', { replace: true });
       }
@@ -82,7 +82,7 @@ export default function AppLayout() {
 
   const isFreeRoute = FREE_ROUTES.some(r => location.pathname.startsWith(r));
   const isAdmin = userRole === 'admin';
-  const isStackRoute = STACK_ROUTES.some(r => location.pathname.startsWith(r));
+  const isStackRoute = STACK_ROUTES.some((r) => location.pathname.startsWith(r));
 
   // Loading
   if (subState === null) {

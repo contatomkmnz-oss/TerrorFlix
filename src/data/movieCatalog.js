@@ -1,8 +1,10 @@
 /**
  * Catálogo central de filmes (e minissérie) — estilo Netflix: várias categorias por título.
  * Edite apenas aqui para alterar títulos, categorias e metadados.
+ * Lote adicional: `movieCatalogHorror70.js`.
  */
 import { DEMO_VIDEO_MP4 } from '@/constants/demoVideo';
+import { MOVIE_HORROR_70 } from '@/data/movieCatalogHorror70';
 
 const POSTERS = [
   '/images/banners/poster-movie.svg',
@@ -406,6 +408,7 @@ Enquanto a situação foge do controle, uma batalha intensa entre o bem e o mal 
     total_views: 8800,
     age_rating: '16',
   },
+  ...MOVIE_HORROR_70,
 ];
 
 /**

@@ -24,7 +24,9 @@ export const AuthProvider = ({ children }) => {
           setAppPublicSettings({ id: 'local', public_settings: {} });
         }
       } catch (e) {
-        console.error(e);
+        if (import.meta.env.DEV) {
+          console.warn('[TerrorFlix] auth.me', e);
+        }
         if (!cancelled) {
           setUser(null);
           setIsAuthenticated(false);
@@ -61,7 +63,9 @@ export const AuthProvider = ({ children }) => {
       setUser(u);
       setAuthError(null);
     } catch (e) {
-      console.error(e);
+      if (import.meta.env.DEV) {
+        console.warn('[TerrorFlix] checkAppState', e);
+      }
     }
   };
 

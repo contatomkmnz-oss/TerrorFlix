@@ -1,7 +1,9 @@
 /**
- * Cliente de dados local (substitui @base44/sdk).
- * Todo o app usa `base44` como antes; a implementação é 100% mock + localStorage.
+ * Cliente de dados: mock local ou API real (Neon/Prisma) quando VITE_USE_REAL_API=true.
  */
 import { localMockClient } from '@/api/localMockClient';
+import { realApiClient } from '@/api/realApiClient';
 
-export const base44 = localMockClient;
+const useRealApi = import.meta.env.VITE_USE_REAL_API === 'true';
+
+export const base44 = useRealApi ? realApiClient : localMockClient;

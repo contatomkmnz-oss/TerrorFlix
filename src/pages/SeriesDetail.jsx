@@ -1,18 +1,59 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { Play, Plus, Check, CheckCircle2, Lock } from 'lucide-react';
 
 import { motion } from 'framer-motion';
 import { isMovie, getMovieStreamUrl } from '@/constants/contentType';
-import { LS_ACTIVE_PROFILE } from '@/config/storageKeys';
+import { readActiveProfile } from '@/lib/activeProfile';
 
 export default function SeriesDetail() {
-  const params = new URLSearchParams(window.location.search);
-  const seriesId = params.get('id');
+  const routeParams = useParams();
+  const [searchParams] = useSearchParams();
+  const idFromQuery = searchParams.get('id');
+  const slug = routeParams.slug;
+  const [seriesId, setSeriesId] = useState(idFromQuery);
+
+  useEffect(() => {
+    if (idFromQuery) {
+      setSeriesId(idFromQuery);
+      return;
+    }
+    if (!slug) {
+      setSeriesId(null);
+      return;
+    }
+    let cancelled = false;
+    const tryMockIds = async () => {
+      const candidates = [`movie-${slug}`, `series-${slug}`, slug];
+      for (const cand of candidates) {
+        const list = await base44.entities.Series.filter({ id: cand });
+        if (list[0]) {
+          if (!cancelled) setSeriesId(cand);
+          return;
+        }
+      }
+      if (!cancelled) setSeriesId(null);
+    };
+    const apiBase = import.meta.env.VITE_API_URL || '';
+    fetch(`${apiBase}/api/catalog/resolve/${encodeURIComponent(slug)}`, { credentials: 'include' })
+      .then(async (r) => {
+        if (r.ok) {
+          const j = await r.json();
+          if (!cancelled) setSeriesId(j.id);
+        } else {
+          await tryMockIds();
+        }
+      })
+      .catch(() => tryMockIds());
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, idFromQuery]);
+
   const queryClient = useQueryClient();
-  const activeProfile = JSON.parse(localStorage.getItem(LS_ACTIVE_PROFILE) || 'null');
+  const activeProfile = readActiveProfile();
   const [selectedSeason, setSelectedSeason] = useState(1);
 
   const { data: series } = useQuery({

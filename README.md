@@ -14,7 +14,11 @@ npm install
 npm run dev
 ```
 
-Abra `http://localhost:3000` (porta configurada em `vite.config.js` → `server.port`).
+Isto arranca **API Hono** em `http://localhost:8787` e **Vite** em `http://localhost:4173`, com proxy de `/api` para a API. Crie um `.env` a partir de `.env.example`, defina `DATABASE_URL` (Neon ou Postgres local), rode `npx prisma migrate deploy` e `npx prisma db seed`, depois `VITE_USE_REAL_API=true` no `.env` para o front usar o banco.
+
+Para **só frontend** com mock (sem Postgres): `npm run dev:local`.
+
+Abra `http://localhost:4173` (porta em `vite.config.js` → `server.port`).
 
 Build de produção (arquivos estáticos em `dist/`):
 
@@ -73,6 +77,26 @@ src/
   components/           # UI e layout
   pages/                # Rotas
 ```
+
+## Produção (GitHub + Vercel + Neon)
+
+1. **Neon**: crie um projeto PostgreSQL, copie a connection string (pooler) para `DATABASE_URL`. Opcionalmente use uma URL “direct” para migrações (`prisma migrate deploy` — na Neon costuma ser a mesma base com host sem `-pooler`).
+2. **Variáveis na Vercel**: `DATABASE_URL`, `JWT_SECRET` (string longa e aleatória), `VITE_USE_REAL_API=true`, `VITE_API_URL` vazio (mesma origem). `ADMIN_EMAIL` / `ADMIN_PASSWORD` só para o seed local ou um script de bootstrap — não commite senhas reais.
+3. **Build**: `vercel.json` usa `prisma generate && vite build`. As funções serverless ficam em `api/[[...route]].mjs` (Node runtime).
+4. **Migrações**: após o primeiro deploy ou em CI, rode `npx prisma migrate deploy` com `DATABASE_URL` apontando para o Neon (localmente ou GitHub Action).
+5. **Seed / admin inicial**: `npx prisma db seed` cria o utilizador admin (email/senha do `.env`). Em produção altere a senha após o primeiro login se usar password de seed.
+6. **Login admin**: com API real, aceda a `/AdminLogin` (a rota `/Admin*` exige cookie de sessão). O catálogo, banners e URLs de vídeo são persistidos na base; o player usa o campo `movie_url` / `video_url` guardado.
+7. **URLs de vídeo (Bunny)**: no admin de filmes, preencha **URL do filme** (`movie_url`); para séries, URLs por episódio. Não há upload de vídeo na app — apenas colar a URL.
+
+### Modelo de dados (Prisma)
+
+Tabelas principais: `Movie`, `Series`, `Episode`, `Category`, `MovieCategory`, `SeriesCategory`, `HeroBanner`, `AdminUser`. Ver `prisma/schema.prisma`.
+
+### Rotas amigáveis
+
+- Detalhe de filme: `/movie/:slug` (ex.: slug `jogos-mortais-2004`).
+- Detalhe de série: `/series/:slug`.
+- Legado: `/SeriesDetail?id=...` continua válido.
 
 ## Nota sobre o site de referência
 

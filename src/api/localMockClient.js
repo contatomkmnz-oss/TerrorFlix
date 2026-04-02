@@ -8,6 +8,15 @@ import {
   LS_ACTIVE_PROFILE,
 } from '@/config/storageKeys';
 import { scheduleCatalogSync } from '@/lib/catalogPersistence';
+import { compressImageFileForStorage } from '@/lib/imageCompressForStorage';
+import {
+  stripSeriesImageFieldsForStorage,
+  hydrateSeriesImageFields,
+  stripEpisodeImageFieldsForStorage,
+  hydrateEpisodeImageFields,
+  deleteSeriesImagesFromIdb,
+  deleteEpisodeImageFromIdb,
+} from '@/lib/catalogImageStorage';
 
 /**
  * Persistência: localStorage (cache) + em dev ficheiro `data/catalog-backup.json` via catalogPersistence.
@@ -71,9 +80,34 @@ function loadTable(name, seedRows) {
   return fallback;
 }
 
-function saveTable(name, rows) {
+/** Grava tabela; data URLs de capas vão para IndexedDB para não estourar o limite do localStorage. */
+async function saveTableAsync(name, rows) {
+  let processed = rows;
+  if (name === 'Series') {
+    processed = await Promise.all(
+      rows.map(async (r) => {
+        try {
+          return await stripSeriesImageFieldsForStorage(r);
+        } catch (e) {
+          console.warn('[demo] stripSeriesImageFieldsForStorage', r?.id, e);
+          return r;
+        }
+      })
+    );
+  } else if (name === 'Episode') {
+    processed = await Promise.all(
+      rows.map(async (r) => {
+        try {
+          return await stripEpisodeImageFieldsForStorage(r);
+        } catch (e) {
+          console.warn('[demo] stripEpisodeImageFieldsForStorage', r?.id, e);
+          return r;
+        }
+      })
+    );
+  }
   const key = mockTableKey(name);
-  const payload = JSON.stringify(rows);
+  const payload = JSON.stringify(processed);
   if (!safeSetItem(key, payload)) {
     throw new Error(
       `[TerrorFlix] Não foi possível salvar ${name}. Verifique espaço em disco ou desative modo privado com bloqueio de storage.`
@@ -106,6 +140,13 @@ function matches(row, query) {
   if (!query || Object.keys(query).length === 0) return true;
   return Object.entries(query).every(([k, v]) => {
     if (v === undefined) return true;
+    /** Títulos antigos sem `published` contam como publicados quando o filtro pede `true`. */
+    if (k === 'published' && v === true) {
+      return row[k] !== false;
+    }
+    if (k === 'published' && v === false) {
+      return row[k] === false;
+    }
     const a = row[k];
     return a == v || String(a) === String(v);
   });
@@ -132,18 +173,64 @@ function makeEntity(table, getSeed) {
   const seed = () => getSeed()[table] || [];
 
   return {
-    filter(query, sortField, limit) {
+    async filter(query, sortField, limit) {
       let rows = loadTable(table, seed()).filter((r) => matches(r, query));
       rows = sortRows(rows, sortField);
       if (typeof limit === 'number' && limit > 0) rows = rows.slice(0, limit);
-      return Promise.resolve(rows);
+      if (table === 'Series') {
+        rows = await Promise.all(
+          rows.map(async (r) => {
+            try {
+              return await hydrateSeriesImageFields(r);
+            } catch (e) {
+              console.warn('[demo] hydrateSeriesImageFields', r?.id, e);
+              return r;
+            }
+          })
+        );
+      } else if (table === 'Episode') {
+        rows = await Promise.all(
+          rows.map(async (r) => {
+            try {
+              return await hydrateEpisodeImageFields(r);
+            } catch (e) {
+              console.warn('[demo] hydrateEpisodeImageFields', r?.id, e);
+              return r;
+            }
+          })
+        );
+      }
+      return rows;
     },
 
-    list(sortField, limit) {
+    async list(sortField, limit) {
       let rows = loadTable(table, seed());
       rows = sortRows(rows, sortField);
       if (typeof limit === 'number' && limit > 0) rows = rows.slice(0, limit);
-      return Promise.resolve(rows);
+      if (table === 'Series') {
+        rows = await Promise.all(
+          rows.map(async (r) => {
+            try {
+              return await hydrateSeriesImageFields(r);
+            } catch (e) {
+              console.warn('[demo] hydrateSeriesImageFields', r?.id, e);
+              return r;
+            }
+          })
+        );
+      } else if (table === 'Episode') {
+        rows = await Promise.all(
+          rows.map(async (r) => {
+            try {
+              return await hydrateEpisodeImageFields(r);
+            } catch (e) {
+              console.warn('[demo] hydrateEpisodeImageFields', r?.id, e);
+              return r;
+            }
+          })
+        );
+      }
+      return rows;
     },
 
     async create(data) {
@@ -155,8 +242,11 @@ function makeEntity(table, getSeed) {
         created_date: data.created_date || new Date().toISOString(),
       };
       rows.push(row);
-      saveTable(table, rows);
-      return row;
+      await saveTableAsync(table, rows);
+      const saved = loadTable(table, seed()).find((r) => r.id === id);
+      if (table === 'Series') return saved ? hydrateSeriesImageFields(saved) : row;
+      if (table === 'Episode') return saved ? hydrateEpisodeImageFields(saved) : row;
+      return saved ?? row;
     },
 
     async update(id, data) {
@@ -168,13 +258,16 @@ function makeEntity(table, getSeed) {
         ...data,
         updated_date: new Date().toISOString(),
       };
-      saveTable(table, rows);
-      return rows[i];
+      await saveTableAsync(table, rows);
+      const saved = loadTable(table, seed()).find((r) => r.id === id);
+      if (table === 'Series') return saved ? hydrateSeriesImageFields(saved) : rows[i];
+      if (table === 'Episode') return saved ? hydrateEpisodeImageFields(saved) : rows[i];
+      return saved ?? rows[i];
     },
 
     async delete(id) {
       const rows = loadTable(table, seed()).filter((r) => r.id !== id);
-      saveTable(table, rows);
+      await saveTableAsync(table, rows);
     },
 
     subscribe() {
@@ -191,7 +284,7 @@ function makeEntity(table, getSeed) {
           created_date: data.created_date || new Date().toISOString(),
         });
       }
-      saveTable(table, rows);
+      await saveTableAsync(table, rows);
       return { created: items.length };
     },
   };
@@ -204,16 +297,26 @@ function getSeed() {
 }
 
 const seriesEntity = makeEntity('Series', getSeed);
+const episodeEntity = makeEntity('Episode', getSeed);
 
 const entities = {
   Series: {
     ...seriesEntity,
     async delete(id) {
-      await seriesEntity.delete(id);
+      await deleteSeriesImagesFromIdb(id);
+      const rows = loadTable('Series', getSeed()).filter((r) => r.id !== id);
+      await saveTableAsync('Series', rows);
       addSeriesSeedTombstone(id);
     },
   },
-  Episode: makeEntity('Episode', getSeed),
+  Episode: {
+    ...episodeEntity,
+    async delete(id) {
+      await deleteEpisodeImageFromIdb(id);
+      const rows = loadTable('Episode', getSeed()).filter((r) => r.id !== id);
+      await saveTableAsync('Episode', rows);
+    },
+  },
   FeaturedBanner: makeEntity('FeaturedBanner', getSeed),
   MyList: makeEntity('MyList', getSeed),
   WatchHistory: makeEntity('WatchHistory', getSeed),
@@ -246,7 +349,7 @@ async function persistUser(u) {
   const i = rows.findIndex((r) => r.id === u.id);
   if (i >= 0) rows[i] = u;
   else rows.push(u);
-  saveTable('User', rows);
+      await saveTableAsync('User', rows);
   cachedUser = u;
 }
 
@@ -321,15 +424,11 @@ export const localMockClient = {
           };
         }
         case 'deleteMyAccount': {
-          [
-            'Profile',
-            'MyList',
-            'WatchHistory',
-            'Subscription',
-            'Notification',
-          ].forEach((t) => {
-            saveTable(t, []);
-          });
+          await Promise.all(
+            ['Profile', 'MyList', 'WatchHistory', 'Subscription', 'Notification'].map((t) =>
+              saveTableAsync(t, [])
+            )
+          );
           try {
             localStorage.removeItem(LS_SERIES_SEED_TOMBSTONES);
           } catch {
@@ -355,14 +454,20 @@ export const localMockClient = {
     Core: {
       /**
        * Data URL (base64) para a URL sobreviver a localStorage + reload.
-       * blob: URLs são temporárias e deixam de funcionar após recarregar a página.
+       * Imagens grandes são comprimidas antes — senão JSON do catálogo estoura quota (~5MB).
        */
       async UploadFile({ file }) {
+        let f = file;
+        try {
+          f = await compressImageFileForStorage(file);
+        } catch {
+          /* mantém original */
+        }
         return new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve({ file_url: reader.result });
           reader.onerror = () => reject(reader.error ?? new Error('UploadFile: leitura falhou'));
-          reader.readAsDataURL(file);
+          reader.readAsDataURL(f);
         });
       },
       async InvokeLLM() {
@@ -403,8 +508,12 @@ function migrateRemoveProfileArroto() {
     localStorage.setItem(key, JSON.stringify(next));
     const activeRaw = localStorage.getItem(LS_ACTIVE_PROFILE);
     if (activeRaw) {
-      const active = JSON.parse(activeRaw);
-      if (active.id === arroto.id) {
+      try {
+        const active = JSON.parse(activeRaw);
+        if (active?.id === arroto.id) {
+          localStorage.removeItem(LS_ACTIVE_PROFILE);
+        }
+      } catch {
         localStorage.removeItem(LS_ACTIVE_PROFILE);
       }
     }
@@ -635,6 +744,61 @@ function migrateAvatarsTerrorTheme() {
 }
 
 migrateAvatarsTerrorTheme();
+
+/**
+ * Migração única: data URLs gigantes ainda no JSON do localStorage → IndexedDB.
+ */
+function migrateInlineDataImagesToIdb() {
+  if (typeof window === 'undefined' || typeof indexedDB === 'undefined') return;
+  void (async () => {
+    try {
+      const keyS = mockTableKey('Series');
+      const rawS = safeGetItem(keyS);
+      if (rawS) {
+        const rows = JSON.parse(rawS);
+        const next = await Promise.all(
+          rows.map(async (r) => {
+            try {
+              return await stripSeriesImageFieldsForStorage(r);
+            } catch (err) {
+              console.warn('[demo] migrate strip Series', r?.id, err);
+              return r;
+            }
+          })
+        );
+        if (JSON.stringify(rows) !== JSON.stringify(next) && safeSetItem(keyS, JSON.stringify(next))) {
+          scheduleCatalogSync();
+        }
+      }
+    } catch (e) {
+      console.warn('[demo] migrateInlineDataImagesToIdb Series', e);
+    }
+    try {
+      const keyE = mockTableKey('Episode');
+      const rawE = safeGetItem(keyE);
+      if (rawE) {
+        const rows = JSON.parse(rawE);
+        const next = await Promise.all(
+          rows.map(async (r) => {
+            try {
+              return await stripEpisodeImageFieldsForStorage(r);
+            } catch (err) {
+              console.warn('[demo] migrate strip Episode', r?.id, err);
+              return r;
+            }
+          })
+        );
+        if (JSON.stringify(rows) !== JSON.stringify(next) && safeSetItem(keyE, JSON.stringify(next))) {
+          scheduleCatalogSync();
+        }
+      }
+    } catch (e) {
+      console.warn('[demo] migrateInlineDataImagesToIdb Episode', e);
+    }
+  })();
+}
+
+migrateInlineDataImagesToIdb();
 
 if (typeof window !== 'undefined') {
   scheduleCatalogSync();

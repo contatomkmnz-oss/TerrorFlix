@@ -2,10 +2,12 @@ import React, { useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { Search as SearchIcon, X, TrendingUp, Play } from 'lucide-react';
+import { Search as SearchIcon, X, TrendingUp, Play, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
 import { imageUrlWithCacheBust } from '@/lib/imageCacheBust';
+import { seriesDetailHref } from '@/lib/seriesRoutes';
+import { hasPlayableVideoLink } from '@/constants/contentType';
 
 export default function Search() {
   const [query, setQuery] = useState('');
@@ -13,6 +15,11 @@ export default function Search() {
   const { data: allSeries = [] } = useQuery({
     queryKey: ['series'],
     queryFn: () => base44.entities.Series.filter({ published: true }),
+  });
+
+  const { data: allEpisodes = [] } = useQuery({
+    queryKey: ['episodes'],
+    queryFn: () => base44.entities.Episode.list('-season', 500),
   });
 
   const { data: popularTerms = [] } = useQuery({
@@ -95,8 +102,10 @@ export default function Search() {
             animate={{ opacity: 1 }}
             className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4"
           >
-            {results.map(s => (
-              <Link key={s.id} to={`/SeriesDetail?id=${s.id}`} className="group">
+            {results.map((s) => {
+              const canPlay = hasPlayableVideoLink(s, allEpisodes);
+              return (
+              <Link key={s.id} to={seriesDetailHref(s)} className="group">
                 <div className="aspect-[2/3] rounded-lg overflow-hidden bg-[#1A1A1A] relative">
                   {s.cover_url ? (
                     <img
@@ -109,15 +118,26 @@ export default function Search() {
                       <span className="text-xs font-bold text-center">{s.title}</span>
                     </div>
                   )}
+                  {!canPlay && (
+                    <div className="absolute inset-0 bg-black/60 flex items-end justify-center pb-4 pointer-events-none">
+                      <div className="flex flex-col items-center gap-1 px-2 text-center">
+                        <Clock className="w-4 h-4 text-[#FFC107]" />
+                        <span className="text-[10px] md:text-xs font-bold text-[#FFC107] leading-tight">EM BREVE</span>
+                      </div>
+                    </div>
+                  )}
+                  {canPlay && (
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
                       <Play className="w-5 h-5 text-black fill-current ml-0.5" />
                     </div>
                   </div>
+                  )}
                 </div>
                 <p className="mt-2 text-sm font-medium truncate text-gray-300 group-hover:text-white transition-colors">{s.title}</p>
               </Link>
-            ))}
+            );
+            })}
           </motion.div>
         </AnimatePresence>
 

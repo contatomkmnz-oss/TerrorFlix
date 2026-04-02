@@ -8,7 +8,7 @@ import MovieAutoCarousel from './MovieAutoCarousel';
 import SeriesCarousel from './SeriesCarousel';
 
 /**
- * Uma fileira Netflix: filmes (carrossel automático + ordem aleatória) e séries (carrossel manual), mesmo título.
+ * Uma fileira Netflix: filmes (marquee contínuo; direção alterna com `rowIndex`) e séries (carrossel).
  */
 export default function NetflixHomeRow({
   slug,
@@ -17,8 +17,8 @@ export default function NetflixHomeRow({
   myListIds,
   onToggleList,
   episodes,
-  hideComingSoon,
-  hideComingSoonIds,
+  /** Índice da linha na home — ímpar/par define sentido oposto no marquee de filmes. */
+  rowIndex = 0,
 }) {
   const location = useLocation();
   const list = useMemo(
@@ -61,8 +61,8 @@ export default function NetflixHomeRow({
             myListIds={myListIds}
             onToggleList={onToggleList}
             episodes={episodes}
-            hideComingSoon={hideComingSoon}
-            hideComingSoonIds={hideComingSoonIds}
+            className="!mb-0"
+            direction={rowIndex % 2 === 0 ? 'left' : 'right'}
           />
         )}
         {seriesRow.length > 0 && (
@@ -74,8 +74,6 @@ export default function NetflixHomeRow({
             onToggleList={onToggleList}
             browseTo={`/Browse?section=${encodeURIComponent(slug)}`}
             episodes={episodes}
-            hideComingSoon={hideComingSoon}
-            hideComingSoonIds={hideComingSoonIds}
             className="!mb-0"
           />
         )}

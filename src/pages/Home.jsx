@@ -13,14 +13,13 @@ import MovieAutoCarousel from '../components/home/MovieAutoCarousel';
 import ContinueWatching from '../components/home/ContinueWatching';
 import { CONTENT_TYPE_MOVIE } from '@/constants/contentType';
 import { catalogItemMatchesCategoryLabel } from '@/lib/categoryFilter';
-import { getItemsForNetflixRow } from '@/lib/netflixHomeRows';
 import { useShuffledMovies } from '@/hooks/useShuffledMovies';
-import { LS_ACTIVE_PROFILE } from '@/config/storageKeys';
+import { readActiveProfile } from '@/lib/activeProfile';
 
 export default function Home() {
   const location = useLocation();
   const queryClient = useQueryClient();
-  const activeProfile = JSON.parse(localStorage.getItem(LS_ACTIVE_PROFILE) || 'null');
+  const activeProfile = readActiveProfile();
 
   const { data: allSeries = [] } = useQuery({
     queryKey: ['series'],
@@ -136,28 +135,21 @@ export default function Home() {
     return Array.from(set).sort((a, b) => a.localeCompare(b, 'pt-BR'));
   }, [visibleSeries, netflixLabels]);
 
-  const maisAssistidosRow = useMemo(
-    () => getItemsForNetflixRow(visibleSeries, 'Mais Assistidos'),
-    [visibleSeries]
-  );
-  const mostViewedIds = new Set(maisAssistidosRow.map((s) => s.id));
-
   return (
     <div className="min-h-screen bg-[#0F0F0F]">
       <HeroBanner slides={heroSlides} />
 
       <div className="-mt-10 md:-mt-20 relative z-10">
-        {NETFLIX_HOME_ROW_ORDER.map(({ slug, label }) => (
+        {NETFLIX_HOME_ROW_ORDER.map(({ slug, label }, rowIndex) => (
           <NetflixHomeRow
             key={slug}
             slug={slug}
             label={label}
+            rowIndex={rowIndex}
             visibleSeries={visibleSeries}
             myListIds={myListIds}
             onToggleList={toggleList}
             episodes={episodes}
-            hideComingSoon
-            hideComingSoonIds={mostViewedIds}
           />
         ))}
 
@@ -173,7 +165,7 @@ export default function Home() {
             onToggleList={toggleList}
             browseTo="/Browse?type=movie"
             episodes={episodes}
-            hideComingSoonIds={mostViewedIds}
+            direction={NETFLIX_HOME_ROW_ORDER.length % 2 === 0 ? 'left' : 'right'}
           />
         )}
 
@@ -189,7 +181,6 @@ export default function Home() {
               onToggleList={toggleList}
               category={cat}
               episodes={episodes}
-              hideComingSoonIds={mostViewedIds}
             />
           );
         })}

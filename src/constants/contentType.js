@@ -20,3 +20,14 @@ export function getMovieStreamUrl(s) {
   const u = s?.movie_url;
   return typeof u === 'string' ? u.trim() : '';
 }
+
+/**
+ * Há URL de vídeo reproduzível: `movie_url` em filmes ou pelo menos um episódio com `video_url` em séries.
+ * `allEpisodes` pode ser a lista completa (filtra por `series_id`).
+ */
+export function hasPlayableVideoLink(series, allEpisodes = []) {
+  if (!series?.id) return false;
+  if (isMovie(series)) return !!getMovieStreamUrl(series);
+  const eps = allEpisodes.filter((e) => e.series_id === series.id);
+  return eps.some((e) => String(e.video_url || '').trim() !== '');
+}
