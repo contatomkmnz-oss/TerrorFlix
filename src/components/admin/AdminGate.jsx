@@ -3,12 +3,12 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 
 /**
- * Em produção com API real, exige sessão admin (cookie HttpOnly).
- * Em modo mock local, o painel continua acessível como antes.
+ * Bloqueia todas as rotas /Admin* para utilizadores com role !== admin.
+ * Modo mock local: só após login em /AdminLogin (ver localMockClient + sessionStorage).
+ * API real: cookie HttpOnly após POST /api/auth/login.
  */
 export default function AdminGate() {
   const { user, isLoadingAuth } = useAuth();
-  if (import.meta.env.VITE_USE_REAL_API !== 'true') return <Outlet />;
   if (isLoadingAuth) {
     return (
       <div className="min-h-screen bg-[#0F0F0F] flex items-center justify-center text-white">

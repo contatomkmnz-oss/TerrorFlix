@@ -6,6 +6,7 @@ import {
   LS_SUBSCRIPTION_DEMO,
   LS_SERIES_SEED_TOMBSTONES,
   LS_ACTIVE_PROFILE,
+  SS_MOCK_ADMIN_SESSION,
 } from '@/config/storageKeys';
 import { scheduleCatalogSync } from '@/lib/catalogPersistence';
 import { compressImageFileForStorage } from '@/lib/imageCompressForStorage';
@@ -332,15 +333,27 @@ const entities = {
 
 let cachedUser = null;
 
+function readMockAdminSession() {
+  try {
+    return typeof sessionStorage !== 'undefined' && sessionStorage.getItem(SS_MOCK_ADMIN_SESSION) === '1';
+  } catch {
+    return false;
+  }
+}
+
 async function getCurrentUser() {
   if (cachedUser) return cachedUser;
   const users = loadTable('User', getSeed().User);
-  cachedUser = users[0] || {
+  const base = users[0] || {
     id: 'user-demo-1',
     email: 'demo@local.dev',
     role: 'admin',
     activated: true,
   };
+  const isAdminSession = readMockAdminSession();
+  cachedUser = isAdminSession
+    ? { ...base, role: 'admin' }
+    : { ...base, role: 'user' };
   return cachedUser;
 }
 
@@ -349,8 +362,8 @@ async function persistUser(u) {
   const i = rows.findIndex((r) => r.id === u.id);
   if (i >= 0) rows[i] = u;
   else rows.push(u);
-      await saveTableAsync('User', rows);
-  cachedUser = u;
+  await saveTableAsync('User', rows);
+  cachedUser = null;
 }
 
 export const localMockClient = {
@@ -360,6 +373,11 @@ export const localMockClient = {
     },
     logout() {
       cachedUser = null;
+      try {
+        sessionStorage.removeItem(SS_MOCK_ADMIN_SESSION);
+      } catch {
+        /* ignore */
+      }
       console.info('[TerrorFlix demo] logout — sessão local limpa (sem redirect externo).');
     },
     redirectToLogin() {
@@ -369,7 +387,7 @@ export const localMockClient = {
       const u = await getCurrentUser();
       const next = { ...u, ...patch };
       await persistUser(next);
-      return next;
+      return getCurrentUser();
     },
   },
 

@@ -14,6 +14,9 @@ export const LS_SERIES_SEED_TOMBSTONES = 'desenhosflix_series_seed_tombstones';
 /** Perfil ativo na UI (JSON) */
 export const LS_ACTIVE_PROFILE = 'desenhos_active_profile';
 
+/** Sessão mock do painel admin (sessionStorage — só modo local, sem API real) */
+export const SS_MOCK_ADMIN_SESSION = 'terrorflix_mock_admin_session';
+
 /** Metadado: último autosave do catálogo (ISO string) */
 export const LS_LAST_CATALOG_SAVE = 'desenhosflix_last_catalog_save';
 
