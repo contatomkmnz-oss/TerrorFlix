@@ -51,8 +51,10 @@ async function main() {
     categoryByName.set(name, cat.id);
   }
 
-  for (const entry of MOVIE_CATALOG) {
+  for (const [i, entry] of MOVIE_CATALOG.entries()) {
     const slug = slugFromCatalogId(entry.id);
+    const posterImg = coverForCatalogEntry(entry, i);
+    const bannerImg = bannerForCatalogEntry(entry, i);
     if (entry.kind === 'movie') {
       await prisma.movie.upsert({
         where: { id: entry.id },
@@ -63,8 +65,8 @@ async function main() {
           description: entry.description,
           year: entry.year,
           rating: entry.age_rating || '16',
-          posterImage: '/images/banners/poster-movie.svg',
-          bannerImage: '/images/banners/hero-slide-1.svg',
+          posterImage: posterImg,
+          bannerImage: bannerImg,
           movieUrl: DEMO_VIDEO_MP4,
           isFeatured: true,
           isPublished: true,
@@ -78,6 +80,8 @@ async function main() {
           year: entry.year,
           rating: entry.age_rating || '16',
           totalViews: entry.total_views ?? 5000,
+          posterImage: posterImg,
+          bannerImage: bannerImg,
         },
       });
       await prisma.movieCategory.deleteMany({ where: { movieId: entry.id } });
