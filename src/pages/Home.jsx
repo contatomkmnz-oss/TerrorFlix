@@ -21,7 +21,14 @@ export default function Home() {
   const queryClient = useQueryClient();
   const activeProfile = readActiveProfile();
 
-  const { data: allSeries = [] } = useQuery({
+  const useRealApi = import.meta.env.VITE_USE_REAL_API === 'true';
+
+  const {
+    data: allSeries = [],
+    isError: seriesError,
+    error: seriesQueryError,
+    isPending: seriesLoading,
+  } = useQuery({
     queryKey: ['series'],
     queryFn: () => base44.entities.Series.filter({ published: true }),
   });
@@ -185,12 +192,34 @@ export default function Home() {
           );
         })}
 
-        {allSeries.length === 0 && (
+        {seriesError && (
+          <div className="flex flex-col items-center justify-center py-24 px-4 max-w-lg mx-auto text-center">
+            <h2 className="text-xl font-bold mb-3 text-[#FFC107]">Catálogo indisponível</h2>
+            <p className="text-gray-300 text-sm mb-4">
+              O site não conseguiu buscar filmes na API. Isto costuma ser:{' '}
+              <strong className="text-white">DATABASE_URL</strong> em falta ou errada na Vercel, ou o deploy foi feito
+              com <code className="text-gray-400">VITE_USE_REAL_API=false</code> (é preciso{' '}
+              <strong className="text-white">true</strong> e um <strong className="text-white">novo deploy</strong>
+              ).
+            </p>
+            <p className="text-xs text-red-300/90 break-words mb-4">
+              {seriesQueryError?.message || 'Erro desconhecido'}
+            </p>
+            <p className="text-gray-500 text-xs">
+              Testa no browser: <code className="text-gray-400">/api/health</code> e{' '}
+              <code className="text-gray-400">/api/catalog/series?published=true</code>
+            </p>
+          </div>
+        )}
+
+        {!seriesLoading && !seriesError && allSeries.length === 0 && (
           <div className="flex flex-col items-center justify-center py-32 px-4">
             <div className="text-6xl mb-6">🎬</div>
             <h2 className="text-2xl font-bold mb-2">Bem-vindo ao TerrorFlix!</h2>
             <p className="text-gray-400 text-center max-w-md">
-              Nenhuma série disponível ainda. O administrador precisa adicionar conteúdo no painel admin.
+              {useRealApi
+                ? 'Nenhum título publicado na base. Corre o seed na Neon (com a mesma DATABASE_URL da Vercel) ou adiciona conteúdo no painel admin.'
+                : 'Nenhuma série disponível ainda. O administrador precisa adicionar conteúdo no painel admin.'}
             </p>
           </div>
         )}
